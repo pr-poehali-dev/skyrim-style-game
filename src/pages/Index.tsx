@@ -3,6 +3,7 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import GameDemo from '@/components/GameDemo';
 
 const Index = () => {
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
@@ -225,82 +226,9 @@ const Index = () => {
       <section id="demo" className="py-20 px-6">
         <div className="container mx-auto max-w-4xl">
           <h3 className="text-5xl font-bold font-cinzel text-center mb-4">Попробуйте демо</h3>
-          <p className="text-center text-muted-foreground mb-12 text-lg">Выберите класс персонажа и начните своё приключение</p>
+          <p className="text-center text-muted-foreground mb-12 text-lg">Выберите персонажа и исследуйте мир!</p>
           
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="text-2xl font-cinzel text-center">Создание персонажа</CardTitle>
-              <CardDescription className="text-center">Выберите один из трёх классов для начала игры</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="warrior" className="w-full" onValueChange={setSelectedClass}>
-                <TabsList className="grid w-full grid-cols-3 mb-8">
-                  <TabsTrigger value="warrior" className="font-cinzel">Воин</TabsTrigger>
-                  <TabsTrigger value="mage" className="font-cinzel">Маг</TabsTrigger>
-                  <TabsTrigger value="rogue" className="font-cinzel">Вор</TabsTrigger>
-                </TabsList>
-                
-                {classes.map((cls) => (
-                  <TabsContent key={cls.id} value={cls.id} className="space-y-6">
-                    <div className="text-center space-y-4">
-                      <div className="w-24 h-24 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                        <Icon name={cls.icon as any} size={48} className="text-primary" />
-                      </div>
-                      <h4 className="text-2xl font-bold font-cinzel">{cls.name}</h4>
-                      <p className="text-muted-foreground">{cls.description}</p>
-                    </div>
-                    
-                    <div className="space-y-4 bg-muted/50 p-6 rounded-lg">
-                      <h5 className="font-bold text-center mb-4">Характеристики</h5>
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="flex items-center gap-2">
-                              <Icon name="Dumbbell" size={16} />
-                              Сила
-                            </span>
-                            <span className="font-bold text-primary">{cls.stats.strength}</span>
-                          </div>
-                          <div className="h-3 bg-background rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-500" style={{ width: `${cls.stats.strength}%` }}></div>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="flex items-center gap-2">
-                              <Icon name="Sparkles" size={16} />
-                              Магия
-                            </span>
-                            <span className="font-bold text-primary">{cls.stats.magic}</span>
-                          </div>
-                          <div className="h-3 bg-background rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500" style={{ width: `${cls.stats.magic}%` }}></div>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="flex items-center gap-2">
-                              <Icon name="Zap" size={16} />
-                              Ловкость
-                            </span>
-                            <span className="font-bold text-primary">{cls.stats.agility}</span>
-                          </div>
-                          <div className="h-3 bg-background rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500" style={{ width: `${cls.stats.agility}%` }}></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Button className="w-full h-12 text-lg hover-scale" size="lg">
-                      <Icon name="Play" size={20} className="mr-2" />
-                      Начать игру за {cls.name.toLowerCase()}а
-                    </Button>
-                  </TabsContent>
-                ))}
-              </Tabs>
-            </CardContent>
-          </Card>
+          <GameDemo />
         </div>
       </section>
 
