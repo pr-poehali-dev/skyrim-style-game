@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GameDemo from '@/components/GameDemo';
+import WorldMap from '@/components/WorldMap';
 
 const Index = () => {
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [showWorldMap, setShowWorldMap] = useState(false);
 
   const classes = [
     {
@@ -215,11 +217,13 @@ const Index = () => {
           </div>
           <div className="mt-12 text-center">
             <p className="text-muted-foreground mb-6">Каждая локация — уникальный опыт с собственными квестами, врагами и сокровищами</p>
-            <Button variant="outline" size="lg" className="hover-scale">
+            <Button variant="outline" size="lg" className="hover-scale" onClick={() => setShowWorldMap(true)}>
               <Icon name="Map" size={20} className="mr-2" />
               Открыть карту мира
             </Button>
           </div>
+          
+          <WorldMap open={showWorldMap} onClose={() => setShowWorldMap(false)} />
         </div>
       </section>
 

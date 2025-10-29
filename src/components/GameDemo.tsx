@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import CharacterCreator from './CharacterCreator';
 
 interface Position {
   x: number;
@@ -13,6 +14,11 @@ interface Character {
   name: string;
   icon: string;
   color: string;
+  race?: string;
+  gender?: string;
+  speed?: number;
+  damage?: number;
+  special?: string;
 }
 
 const characters: Character[] = [
@@ -56,9 +62,13 @@ export default function GameDemo() {
   const [collectedTreasures, setCollectedTreasures] = useState<Set<string>>(new Set());
   const [score, setScore] = useState(0);
   const [health, setHealth] = useState(100);
+  const [maxHealth, setMaxHealth] = useState(100);
   const [isPlaying, setIsPlaying] = useState(false);
   const [animalPositions, setAnimalPositions] = useState(animals);
   const [showTrapWarning, setShowTrapWarning] = useState(false);
+  const [showCharCreator, setShowCharCreator] = useState(true);
+  const [specialCooldown, setSpecialCooldown] = useState(0);
+  const [mana, setMana] = useState(100);
 
   const isObstacle = (x: number, y: number) => {
     return obstacles.some(obs => obs.x === x && obs.y === y);
@@ -133,12 +143,16 @@ export default function GameDemo() {
           e.preventDefault();
           moveCharacter(1, 0);
           break;
+        case ' ':
+          e.preventDefault();
+          useSpecialAbility();
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, moveCharacter]);
+  }, [isPlaying, moveCharacter, useSpecialAbility]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -160,14 +174,59 @@ export default function GameDemo() {
   }, [isPlaying]);
 
   const startGame = (char: Character) => {
+    const baseHealth = char.id === 'warrior' ? 150 : char.id === 'mage' ? 80 : 100;
     setSelectedChar(char);
     setPosition({ x: 1, y: 1 });
     setCollectedTreasures(new Set());
     setScore(0);
-    setHealth(100);
+    setHealth(baseHealth);
+    setMaxHealth(baseHealth);
+    setMana(char.id === 'mage' ? 150 : 50);
     setAnimalPositions(animals);
     setIsPlaying(true);
   };
+  
+  const useSpecialAbility = useCallback(() => {
+    if (specialCooldown > 0 || !selectedChar) return;
+    
+    if (selectedChar.id === 'warrior') {
+      setHealth(prev => Math.min(maxHealth, prev + 30));
+      setScore(prev => prev + 50);
+      setSpecialCooldown(5);
+    } else if (selectedChar.id === 'mage' && mana >= 30) {
+      const treasureNearby = treasures.find(t => 
+        Math.abs(t.x - position.x) <= 3 && Math.abs(t.y - position.y) <= 3
+      );
+      if (treasureNearby) {
+        setPosition({ x: treasureNearby.x, y: treasureNearby.y });
+        checkTreasure(treasureNearby.x, treasureNearby.y);
+      }
+      setMana(prev => prev - 30);
+      setSpecialCooldown(3);
+    } else if (selectedChar.id === 'rogue') {
+      const newX = Math.min(GRID_SIZE - 1, position.x + 2);
+      const newY = Math.min(GRID_SIZE - 1, position.y + 2);
+      if (!isObstacle(newX, newY)) {
+        setPosition({ x: newX, y: newY });
+        checkTreasure(newX, newY);
+      }
+      setSpecialCooldown(4);
+    }
+  }, [specialCooldown, selectedChar, mana, position, maxHealth, checkTreasure]);
+  
+  useEffect(() => {
+    if (specialCooldown > 0) {
+      const timer = setTimeout(() => setSpecialCooldown(prev => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [specialCooldown]);
+  
+  useEffect(() => {
+    if (selectedChar?.id === 'mage' && mana < 150) {
+      const timer = setTimeout(() => setMana(prev => Math.min(150, prev + 5)), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [mana, selectedChar]);
 
   const resetGame = () => {
     setIsPlaying(false);
@@ -176,6 +235,7 @@ export default function GameDemo() {
     setCollectedTreasures(new Set());
     setScore(0);
     setHealth(100);
+    setShowCharCreator(true);
   };
 
   useEffect(() => {
@@ -187,30 +247,19 @@ export default function GameDemo() {
     }
   }, [health]);
 
-  if (!isPlaying && !selectedChar) {
-    return (
-      <Card className="border-2">
-        <CardHeader>
-          <CardTitle className="text-2xl font-cinzel text-center">Выберите персонажа</CardTitle>
-          <CardDescription className="text-center">Управление: WASD или стрелки. Избегайте ловушек и соберите все сокровища!</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            {characters.map((char) => (
-              <Button
-                key={char.id}
-                variant="outline"
-                className="h-32 flex flex-col gap-3 hover-scale border-2 hover:border-primary"
-                onClick={() => startGame(char)}
-              >
-                <Icon name={char.icon as any} size={40} className={char.color} />
-                <span className="font-cinzel text-lg">{char.name}</span>
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
+  if (showCharCreator && !isPlaying) {
+    return <CharacterCreator onComplete={(charData) => {
+      const fullChar: Character = {
+        id: charData.classType,
+        name: charData.name,
+        icon: charData.icon,
+        color: charData.color,
+        race: charData.race,
+        gender: charData.gender
+      };
+      setShowCharCreator(false);
+      startGame(fullChar);
+    }} />;
   }
 
   return (
@@ -224,23 +273,33 @@ export default function GameDemo() {
             </CardTitle>
             <CardDescription>Управление: WASD или стрелки</CardDescription>
           </div>
-          <div>
+          <div className="text-right space-y-2">
             <div className="text-2xl font-bold text-primary">Очки: {score}</div>
             <div className="text-sm text-muted-foreground">
               Сокровищ: {collectedTreasures.size}/{treasures.length}
             </div>
-            <div className="flex items-center gap-2 mt-2">
-              <Icon name="Heart" size={16} className={health > 30 ? "text-red-500" : "text-red-700 animate-pulse"} />
+            <div className="flex items-center gap-2 justify-end">
+              <Icon name="Heart" size={16} className={health > (maxHealth * 0.3) ? "text-red-500" : "text-red-700 animate-pulse"} />
               <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
                 <div 
                   className={`h-full transition-all duration-300 ${
-                    health > 60 ? 'bg-green-500' : health > 30 ? 'bg-yellow-500' : 'bg-red-500'
+                    health > (maxHealth * 0.6) ? 'bg-green-500' : health > (maxHealth * 0.3) ? 'bg-yellow-500' : 'bg-red-500'
                   }`}
-                  style={{ width: `${health}%` }}
+                  style={{ width: `${(health / maxHealth) * 100}%` }}
                 ></div>
               </div>
-              <span className="text-sm font-bold">{health}</span>
+              <span className="text-sm font-bold">{health}/{maxHealth}</span>
             </div>
+            {selectedChar?.id === 'mage' && (
+              <div className="flex items-center gap-2 justify-end">
+                <Icon name="Sparkles" size={16} className="text-blue-500" />
+                <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300" 
+                       style={{ width: `${(mana / 150) * 100}%` }}></div>
+                </div>
+                <span className="text-sm font-bold">{mana}/150</span>
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -389,6 +448,55 @@ export default function GameDemo() {
           </div>
         </div>
 
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card className="bg-muted/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Icon name="User" size={20} />
+                Карточка персонажа
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Имя:</span><span className="font-bold">{selectedChar?.name}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Раса:</span><span className="font-bold">{selectedChar?.race || 'Не указано'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Пол:</span><span className="font-bold">{selectedChar?.gender === 'male' ? 'Мужской' : selectedChar?.gender === 'female' ? 'Женский' : 'Не указано'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Класс:</span><span className="font-bold">{selectedChar?.name}</span></div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-muted/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Icon name="Zap" size={20} />
+                Способность (Space)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={useSpecialAbility} 
+                disabled={specialCooldown > 0 || (selectedChar?.id === 'mage' && mana < 30)}
+                className="w-full"
+                variant={specialCooldown > 0 ? "secondary" : "default"}
+              >
+                {specialCooldown > 0 ? (
+                  <span>Перезарядка: {specialCooldown}с</span>
+                ) : (
+                  <>
+                    {selectedChar?.id === 'warrior' && <><Icon name="Heart" size={16} className="mr-2" />Боевой клич (+30 HP)</>}
+                    {selectedChar?.id === 'mage' && <><Icon name="Sparkles" size={16} className="mr-2" />Телепорт к сокровищу</>}
+                    {selectedChar?.id === 'rogue' && <><Icon name="Zap" size={16} className="mr-2" />Рывок вперёд</>}
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                {selectedChar?.id === 'warrior' && 'Восстанавливает здоровье и даёт очки'}
+                {selectedChar?.id === 'mage' && `Телепортирует к ближайшему сокровищу (30 маны)`}
+                {selectedChar?.id === 'rogue' && 'Быстрый рывок через препятствия'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        
         <div className="flex gap-4 justify-center">
           <Button variant="outline" onClick={resetGame} className="hover-scale">
             <Icon name="RotateCcw" size={20} className="mr-2" />
@@ -409,11 +517,14 @@ export default function GameDemo() {
           </div>
           <ul className="space-y-1 text-muted-foreground ml-6">
             <li>• Используйте WASD или стрелки для движения</li>
+            <li>• Нажмите Space для использования особой способности</li>
             <li>• Собирайте жёлтые сокровища (💎) за 100 очков</li>
             <li>• Обходите деревья 🌲 и камни 🪨</li>
             <li>• Избегайте красные ловушки ⚡ (-20 HP)</li>
             <li>• Наблюдайте за животными 🦌🦅</li>
-            <li>• Соберите все 3 сокровища для победы!</li>
+            <li>• Воин: больше здоровья (150 HP)</li>
+            <li>• Маг: меньше здоровья (80 HP), но есть мана</li>
+            <li>• Вор: стандартное здоровье (100 HP)</li>
           </ul>
         </div>
       </CardContent>
