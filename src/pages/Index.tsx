@@ -68,11 +68,11 @@ const Index = () => {
             Отправляйтесь в эпическое путешествие по миру драконов, магии и древних тайн
           </p>
           <div className="flex gap-4 justify-center">
-            <Button size="lg" className="text-lg hover-scale">
+            <Button size="lg" className="text-lg hover-scale" onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}>
               <Icon name="Play" size={20} className="mr-2" />
               Начать игру
             </Button>
-            <Button size="lg" variant="outline" className="text-lg hover-scale">
+            <Button size="lg" variant="outline" className="text-lg hover-scale" onClick={() => document.getElementById('characters')?.scrollIntoView({ behavior: 'smooth' })}>
               <Icon name="BookOpen" size={20} className="mr-2" />
               Узнать больше
             </Button>
